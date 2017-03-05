@@ -1,0 +1,34 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<!--
+`stitch-order-element`
+Configures an order from Amazon&#34;
+
+@demo demo/index.html 
+-->
+
+<dom-module id="stitch-order-element">
+  <template>
+    <style>
+      :host {
+        display: block;
+      }
+    </style>
+    <h2>Hello [[prop1]]</h2>
+  </template>
+
+  <script>
+    Polymer({
+
+      is: 'stitch-order-element',
+
+      properties: {
+        prop1: {
+          type: String,
+          value: 'stitch-order-element',
+        },
+      },
+
+    });
+  </script>
+</dom-module>
