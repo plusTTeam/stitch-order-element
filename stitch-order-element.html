@@ -1,4 +1,6 @@
-<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="bower_components/polymer/polymer.html">
+<link rel="import" href="stitch-order-request.html">
+<link rel="import" href="stitch-order-form.html">
 
 <!--
 `stitch-order-element`
@@ -8,109 +10,69 @@ Configures an order from Amazon
 -->
 
 <dom-module id="stitch-order-element">
-  <template>
-    <style>
-      :host {
-        display: block;
-      }
-    </style>
-    <h2>Hello [[prop1]]</h2>
+	<template>
+		<style>
+			:host {
+				display: block;
+			}
+		</style>
 
-    <!--
-      Development guidelines:
-        - Stick to paper elements if possible for UI widgets
-        - The mockup shows the element enclosed inside a white page on an off-white background. No need to build that
-          in; it will be part of the environment in which the element is used.
-        - This folder contains a mockup.png with a mockup of the approximate element we're looking for. Interpret it as
-          mostly a guide for what we'd like the layout to look like. We know paper-elements, for example, result in
-          a different visual style than shown there.
+		<stitch-order-request product-url="[[url]]" product-details="{{details}}"></stitch-order-request>
+		<stitch-order-form product-url="{{url}}" product-details="[[details]]"></stitch-order-form>
 
-      Error handling: 
-        - If a product search turns up no results, or more than one results, we'll need to hide the remainder of the form
-          and display an error.
-        - When the URL bar is empty (and thus there are no results), we'll need to hide the form and display a message
-          saying to copy and paste an amazon product web page URL in there to create an order.
+		<!--
+		  Development guidelines:
+			- Stick to paper elements if possible for UI widgets
+			- The mockup shows the element enclosed inside a white page on an off-white background. No need to build that
+			  in; it will be part of the environment in which the element is used.
+			- This folder contains a mockup.png with a mockup of the approximate element we're looking for. Interpret it as
+			  mostly a guide for what we'd like the layout to look like. We know paper-elements, for example, result in
+			  a different visual style than shown there.
 
-      How to read the element below:
-        - For the most part, design/develop is up to you. I scaffolded out a *few* bits below as a way to explain a few
-          particular architecture needs that we anticipate in order to integrate with our system.
-          e.g.: the different userOrder and userOrderForSave objects.
-    -->
+		  Error handling:
+			- If a product search turns up no results, or more than one results, we'll need to hide the remainder of the form
+			  and display an error.
+			- When the URL bar is empty (and thus there are no results), we'll need to hide the form and display a message
+			  saying to copy and paste an amazon product web page URL in there to create an order.
 
-
-  </template>
-
-  <script>
-    Polymer({
-
-      is: 'stitch-order-element',
-
-      properties: {
-
-        /*
-         * USER SETTABLE PROPERTIES
-         * ========================
-         */
-        productUrl: {
-          // On change, load new product details
-          type: String,
-          value: '',
-        },
-
-        userOrder: {
-          // Sometimes this element will be used to re-edit an existing order.
-          // If so, this savedOrder property represents the user's choices from
-          // last time.
-          type: Object,
-          value: function() {return {}}
-        },
-
-        /*
-         * DERIVED PROPERTIES
-         * ========================
-         */
-        productDetails: {
-          /* Depends on productUrl.
-           * Rough idea: parse the URL for the ASIN. Then use the amazon-produt-api NPM
-           * to grab the product details.
-           */
-          type: Object
-        },
-        
-        userOrderForSave: {
-          /*
-           * Depends on productDetails and userOrder, and only contains the parts of userOrder
-           * that are relevent to the selected product. For example, if I order a T-Shirt for color RED,
-           * and then I come back later and edit that order to be for a shovel, we don't want to accidentally
-           * persist the setting {color: RED} since that's no longer relevant.
-           */
-           type: Object
-        }
-
-      },
+		  How to read the element below:
+			- For the most part, design/develop is up to you. I scaffolded out a *few* bits below as a way to explain a few
+			  particular architecture needs that we anticipate in order to integrate with our system.
+			  e.g.: the different userOrder and userOrderForSave objects.
+		-->
 
 
-      /*
-       * Resets the form.
-       */
-      reset: function() {
+	</template>
 
-      },
+	<script>
+	  Polymer({
 
-      /*
-       * When the Set Up Order button is clicked.
-       */
-      onSave: function() {
+		is: 'stitch-order-element',
 
-      },
+		properties: {},
 
-      /*
-       * When the Cancel button is clicked.
-       */
-      onCancel: function() {
 
-      }
+		  /*
+		   * Resets the form.
+		   */
+		reset: function(){
 
-    });
-  </script>
+		},
+
+		  /*
+		   * When the Set Up Order button is clicked.
+		   */
+		onSave: function(){
+
+		},
+
+		  /*
+		   * When the Cancel button is clicked.
+		   */
+		onCancel: function(){
+
+		}
+
+	  });
+	</script>
 </dom-module>

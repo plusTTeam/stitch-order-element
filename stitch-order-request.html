@@ -1,0 +1,30 @@
+<link rel="import" href="bower_components/polymer/polymer.html">
+
+<dom-module id="stitch-order-request">
+	<template>
+	</template>
+
+	<script>
+	  (function(){
+		'use strict';
+
+		Polymer({
+		  is: 'stitch-order-request',
+
+		  properties: {
+			productUrl: String,
+
+			productDetails: {
+			  type: Object,
+			  notify: true,
+			  value: function(){
+				return {
+				  Title: 'Test title'
+				}
+			  }
+			}
+		  }
+		});
+	  })();
+	</script>
+</dom-module>

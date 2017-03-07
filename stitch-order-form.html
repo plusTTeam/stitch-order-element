@@ -1,0 +1,91 @@
+<link rel="import" href="bower_components/polymer/polymer.html">
+<link rel="import" href="bower_components/paper-styles/shadow.html">
+<link rel="import" href="bower_components/paper-input/paper-input.html">
+<link rel="import" href="bower_components/iron-image/iron-image.html">
+
+<link rel="import" href="order-styles.html">
+
+<dom-module id="stitch-order-form">
+	<template>
+		<style include="order-styles">
+			:host {
+				display: block;
+				color: var(--primary-text-color);
+				background-color: var(--primary-background-color);
+
+				margin: 10px;
+				padding: 22px 25px;
+				border-radius: 2px;
+
+				@apply(--shadow-elevation-2dp);
+			}
+		</style>
+
+		<header>
+			<h1>Order Product</h1>
+
+			<paper-input label="[[label]]" placeholder="[[placeholder]]"
+			             value="{{productUrl}}" type="url"
+			             error-message="Invalid URL" auto-validate>
+			</paper-input>
+		</header>
+
+		<div class="content">
+			<div class="left">
+				<iron-image placeholder="./placeholder.jpg"></iron-image>
+			</div>
+
+			<div class="right">
+				<h2>[[productDetails.Title]]</h2>
+			</div>
+		</div>
+
+		<div class="actions">
+
+		</div>
+	</template>
+
+	<script>
+	  (function(){
+		'use strict';
+
+		Polymer({
+		  is: 'stitch-order-form',
+
+		  properties: {
+			label: {
+			  type: String,
+			  value: 'Paste the URL of the Amazon page here'
+			},
+			placeholder: {
+			  type: String,
+			  value: 'https://www.amazon.com/...'
+			},
+
+			  /*
+			   * USER SETTABLE PROPERTIES
+			   * ========================
+			   */
+			productUrl: {
+			  // On change, load new product details
+			  type: String,
+			  value: '',
+			  notify: true
+			},
+
+			  /*
+			   * DERIVED PROPERTIES
+			   * ========================
+			   */
+			productDetails: {
+				/* Depends on productUrl.
+				 * Rough idea: parse the URL for the ASIN. Then use the amazon-produt-api NPM
+				 * to grab the product details.
+				 */
+			  type: Object
+			}
+		  }
+		});
+	  })();
+	</script>
+</dom-module>
