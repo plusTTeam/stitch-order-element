@@ -1,13 +1,16 @@
 <link rel="import" href="bower_components/polymer/polymer.html">
+<link rel="import" href="bower_components/iron-form/iron-form.html">
 <link rel="import" href="bower_components/paper-styles/shadow.html">
 <link rel="import" href="bower_components/paper-input/paper-input.html">
 <link rel="import" href="bower_components/iron-image/iron-image.html">
-
-<link rel="import" href="order-styles.html">
+<link rel="import" href="bower_components/paper-button/paper-button.html">
+<link rel="import" href="bower_components/vaadin-combo-box/vaadin-combo-box.html">
+<link rel="import" href="font-styles.html">
+<link rel="import" href="stitch-order-icons.html">
 
 <dom-module id="stitch-order-form">
 	<template>
-		<style include="order-styles">
+		<style include="font-styles">
 			:host {
 				display: block;
 				color: var(--primary-text-color);
@@ -19,30 +22,150 @@
 
 				@apply(--shadow-elevation-2dp);
 			}
+
+			.section {
+				margin-top: 50px;
+			}
+
+			.horizontal {
+				@apply(--layout-horizontal);
+			}
+
+			[spacer] {
+				@apply(--layout-flex);
+			}
+
+			form paper-input {
+				margin: 0 10px;
+			}
+
+			@media (min-width: 768px) {
+				form paper-input {
+					margin: 0 25px;
+					width: 60%;
+				}
+
+				form .horizontal paper-input {
+					width: 15%;
+				}
+			}
+
+			#content {
+				margin: 15px auto;
+			}
+
+			.left iron-image {
+				display: block;
+				width: 150px;
+				height: 150px;
+			}
+
+			.left .checkPrime {
+				height: 29px;
+			}
+
+			#content .right {
+				padding-left: 10px;
+				@apply(--layout-flex);
+			}
+
+			#options {
+				@apply(--layout-vertical);
+				@apply(--layout-end);
+			}
+
+			iron-icon[prefix] {
+				color: var(--secondary-text-color);
+				margin-right: 10px;
+			}
+
+			#invoiceResume :not(h3) {
+				margin: 0 25px;
+			}
+
+			#buttons {
+				margin: 50px 0 20px;
+				@apply(--layout-horizontal-reverse);
+			}
+
+			paper-button:not([disabled]):hover {
+				font-weight: bold;
+			}
+
+			#submitButton:not([disabled]) {
+				color: var(--text-primary-color);
+				background-color: var(--primary-color);
+			}
+
+			#cancelButton:not([disabled]) {
+				color: var(--accent-color);
+			}
 		</style>
 
 		<header>
 			<h1>Order Product</h1>
 
 			<paper-input label="[[label]]" placeholder="[[placeholder]]"
-			             value="{{productUrl}}" type="url"
-			             error-message="Invalid URL" auto-validate>
+			             value="{{productUrl}}" type="url" required
+			             error-message="Invalid URL">
+				<iron-icon icon="stitch-order:shopping-cart" prefix></iron-icon>
 			</paper-input>
 		</header>
 
-		<div class="content">
-			<div class="left">
-				<iron-image placeholder="./placeholder.jpg"></iron-image>
+		<form is="iron-form" id="form" method="get" content-type="application/json">
+			<div id="content" class="horizontal">
+				<div class="left">
+					<iron-image sizing="contain" preload fade placeholder="./placeholder.jpg"
+					            src="[[productDetails.image]]">
+					</iron-image>
+
+					<img class="checkPrime" hidden$="[[!productDetails.prime]]"
+					     src="./prime.png" alt="the Prime Logo with a checkmark">
+				</div>
+
+				<div class="right">
+					<h2>[[productDetails.Title]]</h2>
+
+					<h4>Select Options</h4>
+					<div id="options">
+						<template is="dom-repeat" items="[[productDetails.options]]" as="option">
+							<vaadin-combo-box required label="[[option.name]] *"
+							                  items="[[option.values]]">
+							</vaadin-combo-box>
+						</template>
+					</div>
+				</div>
 			</div>
 
-			<div class="right">
-				<h2>[[productDetails.Title]]</h2>
+			<div id="shipping" class="section">
+				<h3>Shipping information</h3>
+				<paper-input required label="Address Line 1 *"></paper-input>
+				<paper-input label="Address Line 2"></paper-input>
+				<div class="horizontal">
+					<paper-input required label="City *"></paper-input>
+					<paper-input required label="State *"></paper-input>
+					<paper-input required label="ZIP *" type="number"></paper-input>
+				</div>
+				<paper-input required label="E-Mail *" type="email">
+					<iron-icon icon="stitch-order:mail" prefix></iron-icon>
+				</paper-input>
+				<paper-input required label="Phone Number *" type="tel">
+					<iron-icon icon="stitch-order:phone" prefix></iron-icon>
+				</paper-input>
 			</div>
-		</div>
 
-		<div class="actions">
+			<div id="invoiceResume" class="section">
+				<h3>Total Cost</h3>
+				<div>$ [[productDetails.cost]] + shipping</div>
+				<p>(Note: shipping is calculated when purchase is made)</p>
+			</div>
 
-		</div>
+			<div id="buttons" class="section">
+				<paper-button id="submitButton" raised on-tap="_submit">Set up Order</paper-button>
+				<div spacer></div>
+				<paper-button id="cancelButton" on-tap="reset">Cancel</paper-button>
+			</div>
+		</form>
 	</template>
 
 	<script>
@@ -84,6 +207,33 @@
 				 */
 			  type: Object
 			}
+		  },
+
+		  listeners: {
+			'iron-form-presubmit': '_setAction'
+		  },
+
+		  attached: function(){
+			this.reset();
+		  },
+
+		  reset: function(){
+			this.productUrl = '';
+			this.$.form.reset();
+		  },
+
+		  _setAction: function(){
+			var params = this.$.form.request.params;
+			console.log(params);
+		  },
+
+		  _submit: function(){
+			if (this._validate()) {
+			  this.$.form.submit();
+			}
+		  },
+		  _validate: function(){
+			return true;
 		  }
 		});
 	  })();

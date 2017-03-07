@@ -2,7 +2,6 @@
 
 var gulp = require('gulp');
 var browserSync = require('browser-sync').create();
-var historyApiFallback = require('connect-history-api-fallback');
 
 var config = {
   paths: {
