@@ -3,6 +3,9 @@
 
 <dom-module id="stitch-order-request">
 	<template>
+		<iron-ajax on-response="_handleResponse"
+		           debounce-duration="300">
+		</iron-ajax>
 	</template>
 	<script>
 	  (function(){
@@ -11,89 +14,159 @@
 		Polymer({
 		  is: 'stitch-order-request',
 
+		  /**
+		   * Fired when a request is sent.
+		   *
+		   * @event order-request
+		   */
+
+		  /**
+		   * Fired when a response is received.
+		   *
+		   * @event order-response
+		   */
+
+		  /**
+		   * Fired when an error is received.
+		   *
+		   * @event error
+		   */
+
 		  properties: {
-			productUrl: {
-			  type: String,
-			  observer: '_getItemLookup'
-			},
-			//Generated from productUrl to made the AWS Request
-			awsURL: String,
+			/**
+			 * The Amazon Access Key Id.
+			 */
+			accessKeyID: String,
+			/**
+			 * The Amazon Associate Tag.
+			 */
+			associateTag: String,
+			/**
+			 * The Amazon Secret Access Key.
+			 * Required
+			 */
+			secretAccessKey: String,
 
+			/**
+			 * The URL target of the request.
+			 */
+			productUrl: String,
 
+			/**
+			 * productUrl's response.
+			 *
+			 * Note that productDetails is set when productUrl finishes, and the
+			 * corresponding parse is made.
+			 *
+			 * The response is parsed as a JSON Object from the XML response
+			 * returned by Amazon
+			 *
+			 * @type {Object}
+			 */
 			productDetails: {
 			  type: Object,
-			  notify: true,
-			  value: function(){
-				return {
-				  Title: 'Test title',
-				  cost: 11.63,
-				  options: [
-					{name: 'Size', values: [1, 32, 344]},
-					{name: 'Color', values: ['red', 'green', 'blue']}
-				  ]
-				}
-			  }
-			},
-
-			_secretAccessKey: {
-			  type: String,
-			  value: 'qSgTh1+jiDkga1Tt/ql8EcnS/ze6gHP6W+oqHlQn'
-			},
-			_associateTag: {
-			  type: String,
-			  value: 'buttonjoy-20'
-			},
-			_accessKeyID: {
-			  type: String,
-			  value: 'AKIAIO5T5P757JAH47QA'
+			  notify: true
 			}
+		  },
 
+		  observers: [
+			'_setRequestParams(productUrl, accessKeyID, associateTag, secretAccessKey)'
+		  ],
+
+		  attached: function(){
+			this.secretAccessKey = 'qSgTh1+jiDkga1Tt/ql8EcnS/ze6gHP6W+oqHlQn';
+			this.associateTag = 'buttonjoy-20';
+			this.accessKeyID = 'AKIAIO5T5P757JAH47QA';
+		  },
+
+		  _setRequestParams: function(productUrl, accessKeyID, associateTag, secretAccessKey){
+			this.debounce('requesting-product', function(){
+			  if (productUrl.length > 23 && accessKeyID && associateTag && secretAccessKey) {
+				var ajax = this.$$('iron-ajax');
+				var itemID = this._getItemIdFromURL(productUrl);
+				var query = _service.paramsAsQuery(itemID, accessKeyID, associateTag);
+				var url = this._signedUrl(_service.url(), query, secretAccessKey);
+
+				ajax.set('url', url);
+				var request = ajax.generateRequest();
+				this.fire('order-request', {url: url, itemId: itemID});
+			  }
+			}, 300);
+		  },
+
+		  _handleResponse: function(e){
+			var response = e.detail.response;
+			console.log(response);
+			this.fire('order-response', response);
 		  },
 
 		  _getItemIdFromURL: function(url){
 			var regex = /\/dp\/(\w+)\//;
-			var itemId = regex.exec(url)[1];
-			return itemId;
+			return regex.exec(url)[1];
 		  },
-
-		  _signString: function(stringToSignParam){
+		  _signString: function(stringToSignParam, secret){
 			var shaObj = new jsSHA('SHA-256', 'TEXT');
-			shaObj.setHMACKey(this._secretAccessKey, 'TEXT');
+			shaObj.setHMACKey(secret, 'TEXT');
 			shaObj.update(stringToSignParam);
 			var signature = shaObj.getHMAC('B64');
 			return encodeURIComponent(signature);
 		  },
-
-		  _signURL: function(urlParam, timestampParam){
-			var tiemstamp = timestampParam || new Date().toISOString();
+		  _signedUrl: function(url, canonicalizedQueryString, secret){
 			var parser = document.createElement('a');
-			parser.href = urlParam;
+			parser.href = url;
 			var hostname = parser.hostname;
 			var pathname = parser.pathname;
-			var params = parser.search.replace('?', '').replace(/,/g, '%2C').split('&');
-			params.push('Timestamp=' + encodeURIComponent(tiemstamp));
-			var canonicalizedQueryString = params.sort().join('&');
 			var stringToSign = ['GET', hostname, pathname, canonicalizedQueryString].join('\n');
-			var finalURL = parser.protocol + '//' + parser.hostname + parser.pathname + "?" + [canonicalizedQueryString, 'Signature=' + this._signString(stringToSign)].join('&');
-			return finalURL;
-		  },
 
-		  _getItemLookup: function(urlParam){
-			if (urlParam.length > 10) {
-			  var itemID = this._getItemIdFromURL(urlParam);
-			  var marketplace = 'http://webservices.amazon.com/onca/xml';
-			  var urlParams = ['Service=AWSECommerceService',
-				'ItemId=' + itemID,
-				'Operation=ItemLookup',
-				'SubscriptionId=' + this._accessKeyID,
-				'AssociateTag=' + this._associateTag,
-				'IdType=ASIN', 'ResponseGroup=Images,ItemAttributes,Offers'].join('&');
-			  this.set('awsURL', [marketplace, urlParams].join('?'));
+			return url + '?' + [canonicalizedQueryString, 'Signature=' + this._signString(stringToSign, secret)].join('&');
+		  }
+		});
+
+		var _service = (function(){
+		  var awsUrl = 'http://webservices.amazon.com/onca/xml';
+
+		  var params = {
+			Service: 'AWSECommerceService',
+			Operation: 'ItemLookup',
+			IdType: 'ASIN',
+			ResponseGroup: ['Images', 'ItemAttributes', 'Offers']
+		  };
+
+		  return {
+			params: function(itemID, accessKeyID, associateTag){
+			  var requestParams = JSON.parse(JSON.stringify(params));
+			  requestParams.ItemId = itemID;
+			  requestParams.AWSAccessKeyId = accessKeyID;
+			  requestParams.AssociateTag = associateTag;
+
+			  return requestParams;
+			},
+			query: function(params, timestampParam){
+			  var query = [];
+			  for (var param in params) {
+				if (params.hasOwnProperty(param)) {
+				  query.push(param + '=' + params[param]);
+				}
+			  }
+
+			  var tiemstamp = timestampParam || new Date().toISOString();
+			  query = query.join('&').replace(/,/g, '%2C').split('&');
+			  query.push('Timestamp=' + encodeURIComponent(tiemstamp));
+
+			  return query.sort().join('&');
+			},
+			paramsAsQuery: function(itemID, accessKeyID, associateTag, timestampParam){
+			  return this.query(this.params(itemID, accessKeyID, associateTag, timestampParam));
+			},
+			url: function(query){
+			  if (query instanceof Object) {
+				query = this.query(query);
+			  }
+
+			  return awsUrl + (query ? '?' + query : '');
 			}
 		  }
-
-
-		});
+		})();
 	  })();
 	</script>
 </dom-module>

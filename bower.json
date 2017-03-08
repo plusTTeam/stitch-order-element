@@ -9,7 +9,8 @@
     "iron-image": "PolymerElements/iron-image#^1.2.5",
     "paper-button": "PolymerElements/paper-button#^1.0.14",
     "vaadin-combo-box": "vaadin/vaadin-combo-box#^1.3.2",
-    "jsSHA": "jssha#^2.2.0"
+    "jsSHA": "jssha#^2.2.0",
+    "iron-ajax": "PolymerElements/iron-ajax#^1.4.3"
   },
   "devDependencies": {
     "iron-component-page": "PolymerElements/iron-component-page#^1.0.0",
