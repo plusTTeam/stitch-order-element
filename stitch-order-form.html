@@ -3,6 +3,7 @@
 <link rel="import" href="bower_components/paper-styles/shadow.html">
 <link rel="import" href="bower_components/paper-input/paper-input.html">
 <link rel="import" href="bower_components/iron-image/iron-image.html">
+<link rel="import" href="bower_components/paper-spinner/paper-spinner.html">
 <link rel="import" href="bower_components/paper-button/paper-button.html">
 <link rel="import" href="bower_components/vaadin-combo-box/vaadin-combo-box.html">
 <link rel="import" href="font-styles.html">
@@ -56,11 +57,13 @@
 
 			.left iron-image {
 				display: block;
-				width: 150px;
-				height: 150px;
+				width: 160px;
+				height: 160px;
+				@apply(--shadow-elevation-4dp);
 			}
 
 			.left .checkPrime {
+				margin: 15px;
 				height: 29px;
 			}
 
@@ -112,19 +115,18 @@
 			</paper-input>
 		</header>
 
+		<paper-spinner alt="Loading product image" active="[[loadingImage]]"></paper-spinner>
+
 		<form is="iron-form" id="form" method="get" content-type="application/json">
 			<div id="content" class="horizontal">
 				<div class="left">
-					<iron-image sizing="contain" preload fade placeholder="./placeholder.jpg"
-					            src="[[productDetails.image]]">
-					</iron-image>
-
+					<iron-image sizing="contain" src="[[productDetails.image]]" preload fade></iron-image>
 					<img class="checkPrime" hidden$="[[!productDetails.prime]]"
 					     src="./prime.png" alt="the Prime Logo with a checkmark">
 				</div>
 
 				<div class="right">
-					<h2>[[productDetails.Title]]</h2>
+					<h2>[[productDetails.title]]</h2>
 
 					<h4>Select Options</h4>
 					<div id="options">
@@ -156,7 +158,7 @@
 
 			<div id="invoiceResume" class="section">
 				<h3>Total Cost</h3>
-				<div>$ [[productDetails.cost]] + shipping</div>
+				<div>[[productDetails.cost]] + shipping</div>
 				<p>(Note: shipping is calculated when purchase is made)</p>
 			</div>
 
