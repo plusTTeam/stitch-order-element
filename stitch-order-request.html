@@ -1,9 +1,9 @@
 <link rel="import" href="bower_components/polymer/polymer.html">
+<script src="bower_components/jsSHA/src/sha.js"></script>
 
 <dom-module id="stitch-order-request">
 	<template>
 	</template>
-
 	<script>
 	  (function(){
 		'use strict';
@@ -12,18 +12,87 @@
 		  is: 'stitch-order-request',
 
 		  properties: {
-			productUrl: String,
+			productUrl: {
+			  type: String,
+			  observer: '_getItemLookup'
+			},
+			//Generated from productUrl to made the AWS Request
+			awsURL: String,
+
 
 			productDetails: {
 			  type: Object,
 			  notify: true,
 			  value: function(){
 				return {
-				  Title: 'Test title'
+				  Title: 'Test title',
+				  cost: 11.63,
+				  options: [
+					{name: 'Size', values: [1, 32, 344]},
+					{name: 'Color', values: ['red', 'green', 'blue']}
+				  ]
 				}
 			  }
+			},
+
+			_secretAccessKey: {
+			  type: String,
+			  value: 'qSgTh1+jiDkga1Tt/ql8EcnS/ze6gHP6W+oqHlQn'
+			},
+			_associateTag: {
+			  type: String,
+			  value: 'buttonjoy-20'
+			},
+			_accessKeyID: {
+			  type: String,
+			  value: 'AKIAIO5T5P757JAH47QA'
+			}
+
+		  },
+
+		  _getItemIdFromURL: function(url){
+			var regex = /\/dp\/(\w+)\//;
+			var itemId = regex.exec(url)[1];
+			return itemId;
+		  },
+
+		  _signString: function(stringToSignParam){
+			var shaObj = new jsSHA('SHA-256', 'TEXT');
+			shaObj.setHMACKey(this._secretAccessKey, 'TEXT');
+			shaObj.update(stringToSignParam);
+			var signature = shaObj.getHMAC('B64');
+			return encodeURIComponent(signature);
+		  },
+
+		  _signURL: function(urlParam, timestampParam){
+			var tiemstamp = timestampParam || new Date().toISOString();
+			var parser = document.createElement('a');
+			parser.href = urlParam;
+			var hostname = parser.hostname;
+			var pathname = parser.pathname;
+			var params = parser.search.replace('?', '').replace(/,/g, '%2C').split('&');
+			params.push('Timestamp=' + encodeURIComponent(tiemstamp));
+			var canonicalizedQueryString = params.sort().join('&');
+			var stringToSign = ['GET', hostname, pathname, canonicalizedQueryString].join('\n');
+			var finalURL = parser.protocol + '//' + parser.hostname + parser.pathname + "?" + [canonicalizedQueryString, 'Signature=' + this._signString(stringToSign)].join('&');
+			return finalURL;
+		  },
+
+		  _getItemLookup: function(urlParam){
+			if (urlParam.length > 10) {
+			  var itemID = this._getItemIdFromURL(urlParam);
+			  var marketplace = 'http://webservices.amazon.com/onca/xml';
+			  var urlParams = ['Service=AWSECommerceService',
+				'ItemId=' + itemID,
+				'Operation=ItemLookup',
+				'SubscriptionId=' + this._accessKeyID,
+				'AssociateTag=' + this._associateTag,
+				'IdType=ASIN', 'ResponseGroup=Images,ItemAttributes,Offers'].join('&');
+			  this.set('awsURL', [marketplace, urlParams].join('?'));
 			}
 		  }
+
+
 		});
 	  })();
 	</script>
