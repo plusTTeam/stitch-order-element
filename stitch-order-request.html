@@ -1,12 +1,18 @@
-<link rel="import" href="bower_components/polymer/polymer.html">
-<script src="bower_components/jsSHA/src/sha.js"></script>
+<link rel="import" href="../polymer/polymer.html">
+<script src="../jsSHA/src/sha.js"></script>
 
 <dom-module id="stitch-order-request">
 	<template>
-		<iron-ajax url="[[request.endpoint]]" method="POST"
+		<iron-ajax id="ajaxProductInfo" url="[[request.endpoint]]" method="POST"
 		           content-type="application/json"
 		           on-response="_handleResponse"
-		           debounce-duration="300">
+		           debounce-duration="300"
+		           loading="{{loadingAjax}}">
+		</iron-ajax>
+
+		<iron-ajax id="ajaxProductOptions" url="[[request.endpoint]]" method="POST"
+		           content-type="application/json"
+		           on-response="_handleResponseParentASIN">
 		</iron-ajax>
 	</template>
 	<script>
@@ -82,12 +88,33 @@
 				}
 			  };
 			})();
+
+			this.requestAsinParent = (function(){
+			  var endpoint = 'https://kc5nsidmrk.execute-api.us-west-2.amazonaws.com/production/item/lookup';
+
+			  var body = {
+				itemId: undefined,
+				ResponseGroup: 'VariationMatrix'
+			  };
+
+			  return {
+				body: function(itemId){
+				  var request = JSON.parse(JSON.stringify(body));
+				  request.itemId = itemId;
+
+				  return request;
+				},
+				get endpoint(){
+				  return endpoint;
+				}
+			  };
+			})();
 		  },
 
 		  _setRequestParams: function(productUrl){
 			this.debounce('requesting-product', function(){
 			  if (productUrl.length > 23) {
-				var ajax = this.$$('iron-ajax');
+				var ajax = this.$$('#ajaxProductInfo');
 				var itemID = this._getItemIdFromURL(productUrl);
 
 				ajax.set('body', this.request.body(itemID));
@@ -104,12 +131,38 @@
 			  id: response.ASIN[0],
 			  title: response.ItemAttributes[0].Title[0],
 			  image: response.MediumImage[0].URL[0],
-			  cost: response.ItemAttributes[0].ListPrice[0].FormattedPrice[0],
-			  prime: !!Number(response.Offers[0].Offer[0].OfferListing[0].IsEligibleForPrime[0])
+			  cost: response.ItemAttributes[0].ListPrice ? response.ItemAttributes[0].ListPrice[0].FormattedPrice[0] : 0,
+			  prime: response.Offers[0].Offer ? !!Number(response.Offers[0].Offer[0].OfferListing[0].IsEligibleForPrime[0]): false,
+			  itemsAttributes: response.ItemAttributes[0],
+			  options: [{name:'Quantity',values:[1,2,3,4,5],selected:1}]
 			};
-
+			var ajax = this.$$('#ajaxProductOptions');
+			if(response.ParentASIN){
+				var parentID = response.ParentASIN[0];
+				ajax.set('body', this.requestAsinParent.body(parentID));
+				ajax.generateRequest();
+			}
 			this.set('productDetails', product);
 			this.fire('order-response', product);
+		  },
+
+		  _handleResponseParentASIN:function(e){
+			var productItemAttributes = this.get('productDetails.itemsAttributes');
+			if(e.detail.response[0].Variations) {
+			  var variationsResponse = e.detail.response[0].Variations[0];
+			  var self = this;
+			  variationsResponse.VariationDimensions[0].VariationDimension.forEach(function(item, index){
+				self.push('productDetails.options', {name: item, values: [], selected: productItemAttributes[item][0]});
+			  });
+			  variationsResponse.Item.forEach(function(item){
+				self.get('productDetails.options').forEach(function(option, index){
+				  if (item.ItemAttributes[0][option.name] && option.values.indexOf(item.ItemAttributes[0][option.name][0]) === -1) {
+					self.push('productDetails.options.' + index + '.values', item.ItemAttributes[0][option.name][0])
+				  }
+				});
+			  });
+			  this.fire('order-options-response', this.get('productDetails.options'));
+			}
 		  },
 
 		  _getItemIdFromURL: function(url){
