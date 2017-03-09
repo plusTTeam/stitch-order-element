@@ -129,8 +129,8 @@
 			var response = e.detail.response[0];
 			var product = {
 			  id: response.ASIN[0],
-			  title: response.ItemAttributes[0].Title[0],
-			  image: response.MediumImage[0].URL[0],
+			  title: response.ItemAttributes[0].Title ? response.ItemAttributes[0].Title[0] : 'Untitled',
+			  image: response.ImageSets ? response.ImageSets[0].ImageSet[0].MediumImage[0].URL[0] : '',
 			  cost: response.ItemAttributes[0].ListPrice ? response.ItemAttributes[0].ListPrice[0].FormattedPrice[0] : 0,
 			  prime: response.Offers[0].Offer ? !!Number(response.Offers[0].Offer[0].OfferListing[0].IsEligibleForPrime[0]): false,
 			  itemsAttributes: response.ItemAttributes[0],
@@ -166,7 +166,7 @@
 		  },
 
 		  _getItemIdFromURL: function(url){
-			var regex = /\/dp\/(\w+)\/?/;
+			var regex = /\/dp?\/(\w{10})\/?/;
 			return regex.exec(url)[1];
 		  }
 		});
