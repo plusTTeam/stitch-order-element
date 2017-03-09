@@ -19,9 +19,6 @@
 
 				margin: 10px;
 				padding: 22px 25px;
-				border-radius: 2px;
-
-				@apply(--shadow-elevation-2dp);
 			}
 
 			.section {
@@ -34,6 +31,12 @@
 
 			[spacer] {
 				@apply(--layout-flex);
+			}
+
+			.spinner {
+				margin: 15px auto;
+				@apply(--layout-horizontal);
+				@apply(--layout-center-center);
 			}
 
 			form paper-input {
@@ -59,12 +62,18 @@
 				display: block;
 				width: 160px;
 				height: 160px;
-				@apply(--shadow-elevation-4dp);
+				@apply(--shadow-elevation-2dp);
 			}
 
-			.left .checkPrime {
-				margin: 15px;
-				height: 29px;
+			.left #primeLogo {
+				float: right;
+				margin-top: 7px;
+				height: 14px;
+				width: 47px;
+
+				background-image: url('https://images-na.ssl-images-amazon.com/images/G/01/da/creatives/prime-2015-04.png');
+				background-repeat: no-repeat;
+				color: transparent;
 			}
 
 			#content .right {
@@ -110,19 +119,20 @@
 
 			<paper-input label="[[label]]" placeholder="[[placeholder]]"
 			             value="{{productUrl}}" type="url" required
-			             error-message="Invalid URL">
+			             error-message="Invalid URL" autofocus>
 				<iron-icon icon="stitch-order:shopping-cart" prefix></iron-icon>
 			</paper-input>
 		</header>
 
-		<paper-spinner alt="Loading product image" active="[[loadingImage]]"></paper-spinner>
+		<div class="spinner">
+			<paper-spinner id="formSpinner" alt="Loading product details"></paper-spinner>
+		</div>
 
 		<form is="iron-form" id="form" method="get" content-type="application/json">
 			<div id="content" class="horizontal">
 				<div class="left">
 					<iron-image sizing="contain" src="[[productDetails.image]]" preload fade></iron-image>
-					<img class="checkPrime" hidden$="[[!productDetails.prime]]"
-					     src="./prime.png" alt="the Prime Logo with a checkmark">
+					<div id="primeLogo" hidden$="[[!productDetails.prime]]" alt="the Prime Logo">Prime</div>
 				</div>
 
 				<div class="right">
@@ -133,27 +143,30 @@
 						<template is="dom-repeat" items="[[productDetails.options]]" as="option">
 							<vaadin-combo-box required label="[[option.name]] *"
 							                  items="[[option.values]]"
-							                  selected-item="[[option.selected]]"
-							                  >
+							                  selected-item="{{option.selected}}">
 							</vaadin-combo-box>
 						</template>
+
+						<div class="spinner">
+							<paper-spinner id="optionsSpinner" alt="Loading product options"></paper-spinner>
+						</div>
 					</div>
 				</div>
 			</div>
 
 			<div id="shipping" class="section">
 				<h3>Shipping information</h3>
-				<paper-input required label="Address Line 1 *"></paper-input>
-				<paper-input label="Address Line 2"></paper-input>
+				<paper-input value="{{address.line1}}" required label="Address Line 1 *"></paper-input>
+				<paper-input value="{{address.line2}}" label="Address Line 2"></paper-input>
 				<div class="horizontal">
-					<paper-input required label="City *"></paper-input>
-					<paper-input required label="State *"></paper-input>
-					<paper-input required label="ZIP *" type="number"></paper-input>
+					<paper-input value="{{address.city}}" required label="City *"></paper-input>
+					<paper-input value="{{address.state}}" required label="State *"></paper-input>
+					<paper-input value="{{address.zip}}" required label="ZIP *" type="number"></paper-input>
 				</div>
-				<paper-input required label="E-Mail *" type="email">
+				<paper-input value="{{address.email}}" required label="E-Mail *" type="email">
 					<iron-icon icon="stitch-order:mail" prefix></iron-icon>
 				</paper-input>
-				<paper-input required label="Phone Number *" type="tel">
+				<paper-input value="{{address.phone}}" required label="Phone Number *" type="tel">
 					<iron-icon icon="stitch-order:phone" prefix></iron-icon>
 				</paper-input>
 			</div>
@@ -179,6 +192,34 @@
 		Polymer({
 		  is: 'stitch-order-form',
 
+		  /**
+		   * Fired when the user submit a valid form.
+		   *
+		   * Note that this event will be fired only if the form is filled (at least the required fields).
+		   *
+		   * @event iron-form-submit
+		   */
+
+		  /**
+		   * Fired when the user submit a the form but it's invalid.
+		   *
+		   * Note that this event will be fired only when at least one required field of the form is not filled.
+		   *
+		   * @event iron-form-invalid
+		   */
+
+		  /**
+		   * Fired when the form is reset
+		   *
+		   * @event iron-form-reset
+		   */
+
+		  /**
+		   * Fired when an error is received.
+		   *
+		   * @event error
+		   */
+
 		  properties: {
 			label: {
 			  type: String,
@@ -188,7 +229,14 @@
 			  type: String,
 			  value: 'https://www.amazon.com/...'
 			},
-
+			loading: {
+			  type: Boolean,
+			  value: false
+			},
+			loaded: {
+			  type: Boolean,
+			  value: false
+			},
 			  /*
 			   * USER SETTABLE PROPERTIES
 			   * ========================
@@ -213,6 +261,10 @@
 			}
 		  },
 
+		  observers: [
+			'_loadingContent(loading, loaded)'
+		  ],
+
 		  listeners: {
 			'iron-form-presubmit': '_setAction'
 		  },
@@ -223,11 +275,31 @@
 
 		  reset: function(){
 			this.productUrl = '';
+			this.address = {};
 			this.$.form.reset();
+		  },
+
+		  _loadingContent: function(loading, loaded){
+			this.$.formSpinner.set('active', loading && !loaded);
+			this.$.optionsSpinner.set('active', loading && loaded);
+
+			if (loading) {
+			  Polymer.dom(this.root).querySelectorAll('.spinner').forEach(function(spinner){
+				spinner.style.display = 'block';
+			  });
+			} else {
+			  if (loaded) {
+				Polymer.dom(this.root).querySelectorAll('.spinner').forEach(function(spinner){
+				  spinner.style.display = 'none';
+				});
+			  }
+			}
 		  },
 
 		  _setAction: function(){
 			var params = this.$.form.request.params;
+			params.address = this.address;
+			params.product = this.productDetails;
 		  },
 
 		  _submit: function(){
