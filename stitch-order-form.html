@@ -212,7 +212,7 @@
 			<div id="buttons" class="section">
 				<paper-button id="submitButton" raised on-tap="_submit">Set up Order</paper-button>
 				<div spacer></div>
-				<paper-button id="cancelButton" on-tap="reset">Cancel</paper-button>
+				<paper-button id="cancelButton" on-tap="_reset">Cancel</paper-button>
 			</div>
 		</form>
 	</template>
@@ -268,17 +268,12 @@
 			/**
 			 * The product details and options requests from amazon are on the fly.
 			 */
-			loading: {
-			  type: Boolean,
-			  value: false
-			},
+			loading: Boolean,
 			/**
 			 * The product details where retrieved from amazon.
 			 */
-			loaded: {
-			  type: Boolean,
-			  value: false
-			},
+			loaded: Boolean,
+
 			/**
 			 * The product could not be retrieved through the amazon API or another error gets captured.
 			 */
@@ -333,6 +328,7 @@
 			this.$.form.reset();
 			this.productUrl = URL || '';
 			this.address = address || {};
+			this.loading = this.loaded = false;
 			this._setFail(false);
 			this._setFailMessage('');
 		  },
@@ -372,6 +368,9 @@
 			if (this._validate()) {
 			  this.$.form.submit();
 			}
+		  },
+		  _reset: function(){
+			this.reset();
 		  },
 		  _validate: function(){
 			return true;

@@ -17,9 +17,12 @@ Configures an order from Amazon
 			}
 		</style>
 
-		<stitch-order-request id="request" product-url="[[url]]" product-details="{{details}}"></stitch-order-request>
-		<stitch-order-form id="form" product-url="{{url}}" product-details="[[details]]"></stitch-order-form>
+		<stitch-order-request id="request"
+		                      product-url="[[productUrl]]"
+		                      product-details="{{details}}">
+		</stitch-order-request>
 
+		<stitch-order-form id="form" product-url="{{productUrl}}" product-details="[[details]]"></stitch-order-form>
 		<!--
 		  Development guidelines:
 			- Stick to paper elements if possible for UI widgets
@@ -46,12 +49,69 @@ Configures an order from Amazon
 	  Polymer({
 		is: 'stitch-order-element',
 
-		properties: {},
+		properties: {
+		  /**
+		   * The current product URL.
+		   */
+		  productUrl: {
+			type: Object,
+			notify: true
+		  },
+		  /**
+		   * The current product details retrieved from amazon.
+		   *
+		   * Note that this object will not have the shipping information.
+		   */
+		  productDetails: {
+			type: Object,
+			readOnly: true,
+			computed: '_detailsChanged(details)',
+			notify: true
+		  },
+
+		  /**
+		   * The last product submitted (address, product, options are the 3 objects inside this one).
+		   *
+		   * Note that this object will have the data from the last product submitted
+		   * to access the current product data use `productDetails` instead.
+		   */
+		  lastProduct: {
+			type: Object,
+			readOnly: true,
+			notify: true
+		  },
+		  /**
+		   * The last product submitted URL.
+		   *
+		   * Note that this URL will be the last product submitted URL
+		   * to access the current product URL use `productUrl` instead.
+		   */
+		  lastUrl: {
+			type: String,
+			readOnly: true,
+			notify: true
+		  }
+		},
 
 		listeners: {
 		  'request.order-details-request': '_loadingProduct',
 		  'request.order-response': '_orderDataRetrieved',
-		  'request.error': '_errorThrown'
+		  'request.error': '_errorThrown',
+		  'order-submit': '_save'
+		},
+
+		/**
+		 * Resets the current form data.
+		 *
+		 * This will wipe `productUrl` and `productDetails`.
+		 * `lastProduct` and `lastUrl` will remain unchanged.
+		 */
+		reset: function(){
+		  this.$.form.reset();
+		},
+
+		_detailsChanged: function(details){
+		  return details;
 		},
 
 		_loadingProduct: function(e){
@@ -70,26 +130,13 @@ Configures an order from Amazon
 		_errorThrown: function(e){
 		  this.$.form.error(e.detail.request.response[0].Error[0]);
 		},
-		  /*
-		   * Resets the form.
-		   */
-		reset: function(){
-		  this.$.form.reset();
-		},
-		  /*
-		   * When the Set Up Order button is clicked.
-		   */
-		onSave: function(){
-
-		},
-
-		  /*
-		   * When the Cancel button is clicked.
-		   */
-		onCancel: function(){
-
+		/**
+		 * Capture the `order-submit` event and set the data into the `lastProduct` Object
+		 */
+		_save: function(e){
+		  this._setlastUrl(this.productUrl);
+		  this._setLastProduct(e.detail);
 		}
-
 	  });
 	</script>
 </dom-module>
