@@ -1,0 +1,381 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../iron-form/iron-form.html">
+<link rel="import" href="../paper-styles/shadow.html">
+<link rel="import" href="../paper-input/paper-input.html">
+<link rel="import" href="../iron-image/iron-image.html">
+<link rel="import" href="../paper-spinner/paper-spinner.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../vaadin-combo-box/vaadin-combo-box.html">
+<link rel="import" href="font-styles.html">
+<link rel="import" href="stitch-order-icons.html">
+
+<dom-module id="stitch-order-form">
+	<template>
+		<style include="font-styles">
+			:host {
+				display: block;
+				color: var(--primary-text-color);
+				background-color: var(--primary-background-color);
+
+				margin: 10px;
+				padding: 22px 25px;
+			}
+
+			.section {
+				margin-top: 50px;
+			}
+
+			.horizontal {
+				@apply(--layout-horizontal);
+			}
+
+			[spacer] {
+				@apply(--layout-flex);
+			}
+
+			.spinner {
+				margin: 15px auto;
+				@apply(--layout-horizontal);
+				@apply(--layout-center-center);
+			}
+
+			#error p, #error iron-icon {
+				display: inline-block;
+			}
+
+			#error p {
+				color: var(--primary-error-color, --paper-red-a200);
+			}
+
+			#error iron-icon {
+				color: var(--primary-error-color, --paper-red-a700);
+			}
+
+			form {
+				height: 0;
+				overflow: hidden;
+
+				-webkit-transition: height 300ms;
+				-moz-transition: height 300ms;
+				-ms-transition: height 300ms;
+				-o-transition: height 300ms;
+				transition: height 300ms;
+			}
+
+			form.expanded {
+				height: auto;
+			}
+
+			form paper-input {
+				margin: 0 10px;
+			}
+
+			@media (min-width: 768px) {
+				form paper-input {
+					margin: 0 25px;
+					width: 60%;
+				}
+
+				form .horizontal paper-input {
+					width: 15%;
+				}
+			}
+
+			#content {
+				margin: 15px auto;
+			}
+
+			.left iron-image {
+				display: block;
+				width: 160px;
+				height: 160px;
+				@apply(--shadow-elevation-2dp);
+			}
+
+			.left #primeLogo {
+				float: right;
+				margin-top: 7px;
+				height: 14px;
+				width: 47px;
+
+				background-image: url('https://images-na.ssl-images-amazon.com/images/G/01/da/creatives/prime-2015-04.png');
+				background-repeat: no-repeat;
+				color: transparent;
+			}
+
+			#content .right {
+				padding-left: 10px;
+				@apply(--layout-flex);
+			}
+
+			#options {
+				@apply(--layout-vertical);
+				@apply(--layout-start);
+			}
+
+			iron-icon[prefix] {
+				color: var(--secondary-text-color);
+				margin-right: 10px;
+			}
+
+			#invoiceResume :not(h3) {
+				margin: 0 25px;
+			}
+
+			#buttons {
+				margin: 50px 0 20px;
+				@apply(--layout-horizontal-reverse);
+			}
+
+			paper-button:not([disabled]):hover {
+				font-weight: bold;
+			}
+
+			#submitButton:not([disabled]) {
+				color: var(--text-primary-color);
+				background-color: var(--primary-color);
+			}
+
+			#cancelButton:not([disabled]) {
+				color: var(--accent-color);
+			}
+		</style>
+
+		<header>
+			<h1>Order Product</h1>
+
+			<paper-input label="[[label]]" placeholder="[[placeholder]]"
+			             value="{{productUrl}}" type="url" required
+			             error-message="Invalid URL" autofocus>
+				<iron-icon icon="stitch-order:shopping-cart" prefix></iron-icon>
+			</paper-input>
+		</header>
+
+		<div class="spinner">
+			<paper-spinner id="formSpinner" alt="Loading product details"></paper-spinner>
+
+			<div id="error" hidden$="[[!fail]]">
+				<iron-icon icon="stitch-order:error"></iron-icon>
+				<p>[[failMessage]]</p>
+			</div>
+		</div>
+
+		<form is="iron-form" id="form" method="get" content-type="application/json">
+			<div id="content" class="horizontal">
+				<div class="left">
+					<iron-image sizing="contain" src="[[productDetails.image]]" preload fade></iron-image>
+					<div id="primeLogo" hidden$="[[!productDetails.prime]]" alt="the Prime Logo">Prime</div>
+				</div>
+
+				<div class="right">
+					<h2>[[productDetails.title]]</h2>
+
+					<h4>Select Options</h4>
+					<div id="options">
+						<template is="dom-repeat" items="[[productDetails.options]]" as="option">
+							<vaadin-combo-box required label="[[option.name]] *"
+							                  items="[[option.values]]"
+							                  selected-item="{{option.selected}}">
+							</vaadin-combo-box>
+						</template>
+
+						<div class="spinner">
+							<paper-spinner id="optionsSpinner" alt="Loading product options"></paper-spinner>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div id="shipping" class="section">
+				<h3>Shipping information</h3>
+				<paper-input value="{{address.line1}}" required label="Address Line 1 *"></paper-input>
+				<paper-input value="{{address.line2}}" label="Address Line 2"></paper-input>
+				<div class="horizontal">
+					<paper-input value="{{address.city}}" required label="City *"></paper-input>
+					<paper-input value="{{address.state}}" required label="State *"></paper-input>
+					<paper-input value="{{address.zip}}" required label="ZIP *" type="number"></paper-input>
+				</div>
+				<paper-input value="{{address.email}}" required label="E-Mail *" type="email">
+					<iron-icon icon="stitch-order:mail" prefix></iron-icon>
+				</paper-input>
+				<paper-input value="{{address.phone}}" required label="Phone Number *" type="tel">
+					<iron-icon icon="stitch-order:phone" prefix></iron-icon>
+				</paper-input>
+			</div>
+
+			<div id="invoiceResume" class="section">
+				<h3>Total Cost</h3>
+				<div>[[productDetails.cost]] + shipping</div>
+				<p>(Note: shipping is calculated when purchase is made)</p>
+			</div>
+
+			<div id="buttons" class="section">
+				<paper-button id="submitButton" raised on-tap="_submit">Set up Order</paper-button>
+				<div spacer></div>
+				<paper-button id="cancelButton" on-tap="_reset">Cancel</paper-button>
+			</div>
+		</form>
+	</template>
+
+	<script>
+	  (function(){
+		'use strict';
+
+		Polymer({
+		  is: 'stitch-order-form',
+
+		  /**
+		   * Fired when the user submit a valid form.
+		   *
+		   * Note that this event will be fired only if the form is filled (at least the required fields).
+		   *
+		   * All the form information is included as the event.detail object.
+		   *
+		   * @event order-submit
+		   * @event iron-form-submit
+		   */
+
+		  /**
+		   * Fired when the user submit a the form but it's invalid.
+		   *
+		   * Note that this event will be fired only when at least one required field of the form is not filled.
+		   *
+		   * @event iron-form-invalid
+		   */
+
+		  /**
+		   * Fired when the form is reset
+		   *
+		   * @event iron-form-reset
+		   */
+
+		  properties: {
+			/**
+			 * Label to be set on the URL input.
+			 */
+			label: {
+			  type: String,
+			  value: 'Paste the URL of the Amazon page here'
+			},
+			/**
+			 * Placeholder for the URL input.
+			 */
+			placeholder: {
+			  type: String,
+			  value: 'https://www.amazon.com/...'
+			},
+
+			/**
+			 * The product details and options requests from amazon are on the fly.
+			 */
+			loading: Boolean,
+			/**
+			 * The product details where retrieved from amazon.
+			 */
+			loaded: Boolean,
+
+			/**
+			 * The product could not be retrieved through the amazon API or another error gets captured.
+			 */
+			fail: {
+			  type: Boolean,
+			  readOnly: true,
+			  value: false
+			},
+			/**
+			 * The message displayed as the corresponding error.
+			 */
+			failMessage: {
+			  type: Boolean,
+			  readOnly: true,
+			  value: false
+			},
+
+			/**
+			 * This value is bind with the UI paper-input.
+			 *
+			 * Note that the main functionality is to pass the value to the stitch-order-request
+			 * and the the `productDetails` value as a result.
+			 */
+			productUrl: {
+			  type: String,
+			  value: '',
+			  notify: true
+			},
+			/**
+			 * This value contains the result of the amazon API parsed to fit the UI and
+			 * should be provided directly by the stitch-order-request element.
+			 *
+			 * Note that this value doesn't reflect changes and if you need to know the status
+			 * of the order you should listen instead the `order-submit` or `iron-form-submit` event.
+			 */
+			productDetails: Object
+		  },
+
+		  observers: [
+			'_loadingContent(loading, loaded)'
+		  ],
+
+		  listeners: {
+			'iron-form-presubmit': '_setAction'
+		  },
+
+		  attached: function(){
+			this.reset();
+		  },
+
+		  reset: function(address, URL){
+			this.$.form.reset();
+			this.productUrl = URL || '';
+			this.address = address || {};
+			this.loading = this.loaded = false;
+			this._setFail(false);
+			this._setFailMessage('');
+		  },
+		  error: function(details){
+			this._errorDetails = details;
+			this._setFail(true);
+			this._setFailMessage(details.Message[0]);
+		  },
+
+		  _loadingContent: function(loading, loaded){
+			this.$.form.classList.toggle('expanded', loaded);
+			this.$.formSpinner.set('active', loading && !loaded);
+			this.$.optionsSpinner.set('active', loading && loaded);
+
+			if (loading) {
+			  Polymer.dom(this.root).querySelectorAll('.spinner').forEach(function(spinner){
+				spinner.style.display = '';
+			  });
+			} else {
+			  if (loaded) {
+				Polymer.dom(this.root).querySelectorAll('.spinner').forEach(function(spinner){
+				  spinner.style.display = 'none';
+				});
+			  }
+			}
+		  },
+
+		  _setAction: function(){
+			var params = this.$.form.request.params;
+			params.address = this.address;
+			params.product = this.productDetails;
+			params.options = this.productDetails.options;
+			this.fire('order-submit', params);
+		  },
+
+		  _submit: function(){
+			if (this._validate()) {
+			  this.$.form.submit();
+			}
+		  },
+		  _reset: function(){
+			this.reset();
+		  },
+		  _validate: function(){
+			return true;
+		  }
+		});
+	  })();
+	</script>
+</dom-module>

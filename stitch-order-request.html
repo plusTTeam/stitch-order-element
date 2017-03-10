@@ -1,0 +1,192 @@
+<link rel="import" href="../polymer/polymer.html">
+
+<dom-module id="stitch-order-request">
+	<template>
+		<iron-ajax url="[[request.endpoint]]" method="POST"
+		           content-type="application/json"
+		           on-response="_handleResponse"
+		           debounce-duration="300">
+		</iron-ajax>
+	</template>
+	<script>
+	  (function(){
+		'use strict';
+
+		Polymer({
+		  is: 'stitch-order-request',
+
+		  /**
+		   * Fired when a request for the product Information is sent.
+		   *
+		   * @event order-details-request
+		   */
+
+		  /**
+		   * Fired when a request for the product Options is sent.
+		   *
+		   * Note that this event will be fired only if the product has a parent.
+		   *
+		   * @event order-options-request
+		   */
+
+		  /**
+		   * Fired when a response is received and parsed.
+		   *
+		   * @event order-response
+		   */
+
+		  /**
+		   * Fired when an error is received.
+		   *
+		   * @event error
+		   */
+
+		  properties: {
+			/**
+			 * The URL target of the request.
+			 */
+			productUrl: {
+			  type: String,
+			  observer: '_requestProduct'
+			},
+
+			/**
+			 * productUrl's response.
+			 *
+			 * Note that productDetails is set when productUrl finishes, and the
+			 * corresponding parse is made.
+			 *
+			 * The response is parsed as a JSON Object from the XML response
+			 * returned by Amazon
+			 *
+			 * @type {Object}
+			 */
+			productDetails: {
+			  type: Object,
+			  notify: true,
+			  value: {}
+			}
+		  },
+
+		  ready: function(){
+			this.request = (function(){
+			  var endpoint = 'https://kc5nsidmrk.execute-api.us-west-2.amazonaws.com/production/item/lookup';
+
+			  var body = {
+				lookup: {
+				  itemId: undefined,  //Required, extracted from amazon product URL
+				  ResponseGroup: 'ItemAttributes,Images,OfferListings'
+				},
+				options: {
+				  itemId: undefined, //Required, extracted from product response ParentASIN
+				  ResponseGroup: 'VariationMatrix'
+				}
+			  };
+
+			  return {
+				body: function(itemId, options){
+				  var request = JSON.parse(JSON.stringify(options ? body.options : body.lookup));
+				  request.itemId = itemId;
+
+				  return request;
+				},
+				get endpoint(){
+				  return endpoint;
+				}
+			  };
+			})();
+		  },
+
+		  _requestProduct: function(productUrl){
+			this.debounce('requesting-product', function(){
+			  if (productUrl.length > 23) {
+				var ajax = this.$$('iron-ajax');
+				var itemID = this._getItemIdFromURL(productUrl);
+
+				ajax.set('body', this.request.body(itemID));
+				ajax.generateRequest();
+
+				this.fire('order-details-request', {itemId: itemID, URL: this.productUrl});
+			  }
+			}, 300);
+		  },
+
+		  _handleResponse: function(e){
+			var response = e.detail.response[0];
+
+			if (response.ItemAttributes) {
+			  this._setProductDetails(response);
+			} else {
+			  this._setProductOptions(response);
+			}
+		  },
+
+		  _getItemIdFromURL: function(url){
+			var regex = /\/dp?\/(\w{10})\/?/;
+			return regex.exec(url)[1];
+		  },
+		  _setProductDetails: function(details){
+			var product = {
+			  id: details.ASIN[0],
+			  title: details.ItemAttributes[0].Title ? details.ItemAttributes[0].Title[0] : 'Untitled',
+			  image: details.ImageSets ? details.ImageSets[0].ImageSet[0].MediumImage[0].URL[0] : '',
+			  cost: details.ItemAttributes[0].ListPrice ? details.ItemAttributes[0].ListPrice[0].FormattedPrice[0] : 'On Purchase',
+			  prime: details.Offers[0].Offer ? !!Number(details.Offers[0].Offer[0].OfferListing[0].IsEligibleForPrime[0]) : false,
+			  itemsAttributes: details.ItemAttributes[0],
+			  options: [{name: 'Quantity', values: [1, 2, 3, 4, 5], selected: 1}]
+			};
+
+			this._requestOptions(details);
+			this.set('productDetails', product);
+			this.fire('order-response', {details: product});
+		  },
+		  _requestOptions: function(product){
+			if (product.ParentASIN) {
+			  var ajax = this.$$('iron-ajax');
+			  var parentID = product.ParentASIN[0];
+
+			  ajax.set('body', this.request.body(parentID, true));
+			  ajax.generateRequest();
+
+			  this.fire('order-options-request', {itemId: product.ASIN[0], parentId: parentID, URL: this.productUrl});
+			} else {
+			  this.fire('order-response', {options: this.productDetails.options});
+			}
+		  },
+		  _setProductOptions: function(details){
+			if (details.Variations) {
+			  var product = this.productDetails.itemsAttributes;
+			  var variations = details.Variations[0];
+			  var dimensions = variations.VariationDimensions[0].VariationDimension;
+			  var options = [];
+
+			  dimensions.forEach(function(dimension){
+				if (product[dimension]) {
+				  options.push({name: dimension, values: [], selected: product[dimension][0]});
+				}
+			  });
+
+			  variations = variations.Item;
+			  variations.forEach(function(variation){
+				options.forEach(function(option){
+				  var value = variation.ItemAttributes[0][option.name];
+				  value = value && value[0];
+
+				  if (value && option.values.indexOf(value) === -1) {
+					option.values.push(value);
+				  }
+				});
+			  });
+
+			  var self = this;
+			  options.forEach(function(option){
+				self.push('productDetails.options', option);
+			  });
+			}
+
+			this.fire('order-response', {options: this.productDetails.options});
+		  }
+		});
+	  })();
+	</script>
+</dom-module>

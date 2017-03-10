@@ -1,0 +1,65 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="../paper-styles/typography.html">
+
+<dom-module id="font-styles">
+	<template>
+		<style>
+			/* Material design principles for fonts */
+			:root {
+				--secondary-font-family: 'Open Sans', sans-serif;
+			}
+
+			body {
+				@apply(--paper-font-common-base);
+			}
+
+			h1 {
+				@apply(--paper-font-display2);
+			}
+
+			h2 {
+				@apply(--paper-font-display1);
+			}
+
+			h3 {
+				@apply(--paper-font-headline);
+			}
+
+			h4 {
+				@apply(--paper-font-subhead);
+			}
+
+			h5, h6 {
+				@apply(--paper-font-body2);
+			}
+
+			a {
+				@apply(--paper-font-button);
+			}
+
+			/* Overrides */
+
+			body, a {
+				color: var(--accent-color);
+			}
+
+			h1, h2, h3, h4, h5, h6, p {
+				color: var(--primary-text-color);
+				margin: 0 0 20px 0;
+			}
+
+			h1, h2, h3, h4, h5, h6, a {
+				text-rendering: optimizeLegibility;
+			}
+
+			a {
+				text-decoration: none;
+			}
+
+			p {
+				color: var(--secondary-text-color);
+				font-family: var(--secondary-font-family);
+			}
+		</style>
+	</template>
+</dom-module>
