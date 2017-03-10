@@ -159,7 +159,9 @@
 			  var options = [];
 
 			  dimensions.forEach(function(dimension){
-				options.push({name: dimension, values: [], selected: product[dimension][0]});
+				if (product[dimension]) {
+				  options.push({name: dimension, values: [], selected: product[dimension][0]});
+				}
 			  });
 
 			  variations = variations.Item;

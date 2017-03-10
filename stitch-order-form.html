@@ -39,6 +39,21 @@
 				@apply(--layout-center-center);
 			}
 
+			form {
+				height: 0;
+				overflow: hidden;
+
+				-webkit-transition: height 300ms;
+				-moz-transition: height 300ms;
+				-ms-transition: height 300ms;
+				-o-transition: height 300ms;
+				transition: height 300ms;
+			}
+
+			form.expanded {
+				height: auto;
+			}
+
 			form paper-input {
 				margin: 0 10px;
 			}
@@ -197,6 +212,9 @@
 		   *
 		   * Note that this event will be fired only if the form is filled (at least the required fields).
 		   *
+		   * All the form information is included as the event.detail object.
+		   *
+		   * @event order-submit
 		   * @event iron-form-submit
 		   */
 
@@ -214,51 +232,70 @@
 		   * @event iron-form-reset
 		   */
 
-		  /**
-		   * Fired when an error is received.
-		   *
-		   * @event error
-		   */
-
 		  properties: {
+			/**
+			 * Label to be set on the URL input.
+			 */
 			label: {
 			  type: String,
 			  value: 'Paste the URL of the Amazon page here'
 			},
+			/**
+			 * Placeholder for the URL input.
+			 */
 			placeholder: {
 			  type: String,
 			  value: 'https://www.amazon.com/...'
 			},
+
+			/**
+			 * The product details and options requests from amazon are on the fly.
+			 */
 			loading: {
 			  type: Boolean,
 			  value: false
 			},
+			/**
+			 * The product details where retrieved from amazon.
+			 */
 			loaded: {
 			  type: Boolean,
 			  value: false
 			},
-			  /*
-			   * USER SETTABLE PROPERTIES
-			   * ========================
-			   */
+			/**
+			 * The product could not be retrieved through the amazon API or another error gets captured.
+			 */
+			fail: {
+			  type: Boolean,
+			  value: false
+			},
+			/**
+			 * The message displayed as the corresponding error.
+			 */
+			failMessage: {
+			  type: Boolean,
+			  value: false
+			},
+
+			/**
+			 * This value is bind with the UI paper-input.
+			 *
+			 * Note that the main functionality is to pass the value to the stitch-order-request
+			 * and the the `productDetails` value as a result.
+			 */
 			productUrl: {
-			  // On change, load new product details
 			  type: String,
 			  value: '',
 			  notify: true
 			},
-
-			  /*
-			   * DERIVED PROPERTIES
-			   * ========================
-			   */
-			productDetails: {
-				/* Depends on productUrl.
-				 * Rough idea: parse the URL for the ASIN. Then use the amazon-produt-api NPM
-				 * to grab the product details.
-				 */
-			  type: Object
-			}
+			/**
+			 * This value contains the result of the amazon API parsed to fit the UI and
+			 * should be provided directly by the stitch-order-request element.
+			 *
+			 * Note that this value doesn't reflect changes and if you need to know the status
+			 * of the order you should listen instead the `order-submit` or `iron-form-submit` event.
+			 */
+			productDetails: Object
 		  },
 
 		  observers: [
@@ -280,12 +317,13 @@
 		  },
 
 		  _loadingContent: function(loading, loaded){
+			this.$.form.classList.toggle('expanded', loaded);
 			this.$.formSpinner.set('active', loading && !loaded);
 			this.$.optionsSpinner.set('active', loading && loaded);
 
 			if (loading) {
 			  Polymer.dom(this.root).querySelectorAll('.spinner').forEach(function(spinner){
-				spinner.style.display = 'block';
+				spinner.style.display = '';
 			  });
 			} else {
 			  if (loaded) {
@@ -300,6 +338,8 @@
 			var params = this.$.form.request.params;
 			params.address = this.address;
 			params.product = this.productDetails;
+			params.options = this.productDetails.options;
+			this.fire('order-submit', params);
 		  },
 
 		  _submit: function(){
