@@ -39,6 +39,18 @@
 				@apply(--layout-center-center);
 			}
 
+			#error p, #error iron-icon {
+				display: inline-block;
+			}
+
+			#error p {
+				color: var(--primary-error-color, --paper-red-a200);
+			}
+
+			#error iron-icon {
+				color: var(--primary-error-color, --paper-red-a700);
+			}
+
 			form {
 				height: 0;
 				overflow: hidden;
@@ -141,6 +153,11 @@
 
 		<div class="spinner">
 			<paper-spinner id="formSpinner" alt="Loading product details"></paper-spinner>
+
+			<div id="error" hidden$="[[!fail]]">
+				<iron-icon icon="stitch-order:error"></iron-icon>
+				<p>[[failMessage]]</p>
+			</div>
 		</div>
 
 		<form is="iron-form" id="form" method="get" content-type="application/json">
@@ -267,6 +284,7 @@
 			 */
 			fail: {
 			  type: Boolean,
+			  readOnly: true,
 			  value: false
 			},
 			/**
@@ -274,6 +292,7 @@
 			 */
 			failMessage: {
 			  type: Boolean,
+			  readOnly: true,
 			  value: false
 			},
 
@@ -310,10 +329,17 @@
 			this.reset();
 		  },
 
-		  reset: function(){
-			this.productUrl = '';
-			this.address = {};
+		  reset: function(address, URL){
 			this.$.form.reset();
+			this.productUrl = URL || '';
+			this.address = address || {};
+			this._setFail(false);
+			this._setFailMessage('');
+		  },
+		  error: function(details){
+			this._errorDetails = details;
+			this._setFail(true);
+			this._setFailMessage(details.Message[0]);
 		  },
 
 		  _loadingContent: function(loading, loaded){

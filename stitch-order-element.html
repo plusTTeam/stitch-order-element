@@ -17,8 +17,8 @@ Configures an order from Amazon
 			}
 		</style>
 
-		<stitch-order-request product-url="[[url]]" product-details="{{details}}"></stitch-order-request>
-		<stitch-order-form product-url="{{url}}" product-details="[[details]]"></stitch-order-form>
+		<stitch-order-request id="request" product-url="[[url]]" product-details="{{details}}"></stitch-order-request>
+		<stitch-order-form id="form" product-url="{{url}}" product-details="[[details]]"></stitch-order-form>
 
 		<!--
 		  Development guidelines:
@@ -40,25 +40,42 @@ Configures an order from Amazon
 			  particular architecture needs that we anticipate in order to integrate with our system.
 			  e.g.: the different userOrder and userOrderForSave objects.
 		-->
-
-
 	</template>
 
 	<script>
 	  Polymer({
-
 		is: 'stitch-order-element',
 
 		properties: {},
 
+		listeners: {
+		  'request.order-details-request': '_loadingProduct',
+		  'request.order-response': '_orderDataRetrieved',
+		  'request.error': '_errorThrown'
+		},
 
+		_loadingProduct: function(e){
+		  this.$.form.reset(null, e.detail.URL);
+		  this.$.form.set('loading', true);
+		  this.$.form.set('loaded', false);
+		},
+		_orderDataRetrieved: function(e){
+		  if (e.detail.details) {
+			this.$.form.set('loaded', true);
+		  }
+		  if (e.detail.options) {
+			this.$.form.set('loading', false);
+		  }
+		},
+		_errorThrown: function(e){
+		  this.$.form.error(e.detail.request.response[0].Error[0]);
+		},
 		  /*
 		   * Resets the form.
 		   */
 		reset: function(){
-
+		  this.$.form.reset();
 		},
-
 		  /*
 		   * When the Set Up Order button is clicked.
 		   */

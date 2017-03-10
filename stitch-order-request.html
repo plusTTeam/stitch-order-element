@@ -106,7 +106,7 @@
 				ajax.set('body', this.request.body(itemID));
 				ajax.generateRequest();
 
-				this.fire('order-details-request', {itemId: itemID});
+				this.fire('order-details-request', {itemId: itemID, URL: this.productUrl});
 			  }
 			}, 300);
 		  },
@@ -148,7 +148,9 @@
 			  ajax.set('body', this.request.body(parentID, true));
 			  ajax.generateRequest();
 
-			  this.fire('order-options-request', {itemId: product.ASIN[0], parentId: parentID});
+			  this.fire('order-options-request', {itemId: product.ASIN[0], parentId: parentID, URL: this.productUrl});
+			} else {
+			  this.fire('order-response', {options: this.productDetails.options});
 			}
 		  },
 		  _setProductOptions: function(details){
@@ -180,8 +182,9 @@
 			  options.forEach(function(option){
 				self.push('productDetails.options', option);
 			  });
-			  this.fire('order-response', {options: this.productDetails.options});
 			}
+
+			this.fire('order-response', {options: this.productDetails.options});
 		  }
 		});
 	  })();
